@@ -1,0 +1,11 @@
+node_modules/
+.env
+./.env.example
+.env.local
+dist/
+build/
+coverage/
+.env.example/
+.env
+.env.*
+!.env.example

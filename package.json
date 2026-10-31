@@ -1,0 +1,14 @@
+{
+  "name": "prevent-malicious-pr-detector-mern",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MERN Stack Malicious PR & Dependency-Update Detector for Open Source",
+  "scripts": {
+    "dev": "node start-all.js",
+    "start": "node start-all.js",
+    "test": "npm --prefix backend test",
+    "start:backend": "npm --prefix backend start",
+    "start:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}

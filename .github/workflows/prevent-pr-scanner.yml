@@ -1,0 +1,59 @@
+name: PRevent — Malicious PR & Dependency-Update Scanner
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  security-review:
+    name: Hybrid Supply-Chain & PR Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Metadata
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PRevent Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run 25 Automated Security Scanner Tests
+        working-directory: ./backend
+        run: npm test
+
+      - name: Scan Pull Request & Post Security Summary Comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          node -e '
+            const { fetchGithubPr } = require("./backend/src/services/githubClient");
+            const { executeHybridAnalysis } = require("./backend/src/routes/api");
+            (async () => {
+              const prData = await fetchGithubPr(process.env.PR_URL);
+              const report = await executeHybridAnalysis({
+                title: prData.title,
+                repository: prData.repository,
+                prNumber: prData.pr_number,
+                author: prData.author,
+                rawFiles: prData.files,
+                prUrl: prData.pr_url
+              });
+              console.log("=== PRevent Security Report ===");
+              console.log(`Risk Score: ${report.risk_score}/100 (${report.risk_level})`);
+              console.log(`Recommended Action: ${report.recommended_action}`);
+              if (report.risk_score >= 75) {
+                process.exitCode = 1;
+              }
+            })();
+          '
